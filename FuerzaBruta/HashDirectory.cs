@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace FuerzaBruta;
 
 using System;
@@ -8,50 +10,61 @@ public class HashDirectory
 {
     public static void HashArguments(string filePath)
     {
-        if (File.Exists(filePath))
+
+        // Verificar si existe el archivo
+        if (!File.Exists(filePath))
         {
-            
-            FileInfo file = new FileInfo(filePath);
-            
-            using (SHA256 mySHA256 = SHA256.Create())
-            {
-                
-                using (FileStream fileStream = file.Open(FileMode.Open))
-                {
-                    try
-                    {
-                        fileStream.Position = 0;
-                        
-                        byte[] hashValue = mySHA256.ComputeHash(fileStream);
-                        
-                        Console.Write($"{file.Name}: ");
-                        PrintByteArray(hashValue);
-                    }
-                    catch (IOException e)
-                    {
-                        Console.WriteLine($"I/O Exception: {e.Message}");
-                    }
-                    catch (UnauthorizedAccessException e)
-                    {
-                        Console.WriteLine($"Access Exception: {e.Message}");
-                    }
-                }
-                
-            }
+            Console.WriteLine("File not found");
+            return;
+        }
+
+        List<string> passwords = new List<string>(File.ReadAllLines(filePath));
+
+        // Escoge una contraseña aleatoria y la hashea
+        Random random = new Random();
+        string chosenPassword = passwords[random.Next(passwords.Count)];
+        string hashedChosenPassword = HashPassword(chosenPassword);
+        
+        Console.WriteLine($"Contraseña seleccionada: {chosenPassword}");
+        Console.WriteLine($"Hash de la contraseña: {hashedChosenPassword}\n");
+        
+        string crackedPassword = BruteForceAttack(passwords, hashedChosenPassword);
+
+        if (crackedPassword != null)
+        {
+            Console.WriteLine($"¡Contraseña encontrada!: {crackedPassword}");
         }
         else
         {
-            Console.WriteLine("The directory specified could not be found.");
+            Console.WriteLine("No se pudo encontrar la contraseña en el diccionario.");
         }
-    }
-    
-    public static void PrintByteArray(byte[] array)
-    {
-        for (int i = 0; i < array.Length; i++)
+
+        // Método que genera el hash
+        // Crea una instancia del algoritmo -> Convierte la contraseña en bytes -> La hashea -> La devuelve en hex
+        static string HashPassword(string password)
         {
-            Console.Write($"{array[i]:X2}");
-            if ((i % 4) == 3) Console.Write(" ");
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(password);
+                byte[] hash = sha256.ComputeHash(bytes);
+                return BitConverter.ToString(hash).Replace("-", "").ToLower();
+            }
         }
-        Console.WriteLine();
+
+        // Compara los hashes
+        static string BruteForceAttack(List<string> passwordList, string targetHash)
+        {
+            foreach (string password in passwordList)
+            {
+                string hashedPassword = HashPassword(password);
+
+                if (hashedPassword == targetHash)
+                {
+                    return password;
+                }
+            }
+
+            return null;
+        }
     }
 }
