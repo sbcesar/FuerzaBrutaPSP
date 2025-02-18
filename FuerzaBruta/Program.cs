@@ -2,7 +2,7 @@
 
 public class Program
 {
-    public static void Main(string[] args)
+    public static void Main()
     {
         string fileName = "2151220-passwords.txt";
 
